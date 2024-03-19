@@ -16,13 +16,12 @@ def gatherFileInfo(myblob: func.InputStream, context: func.Context):
     executionID = context.invocation_id  # Obtain the ID of the uploaded document. 
     fileName = myblob.name  # Obtain the name of the uploaded document.
     metadata = myblob.metadata  # Obtain the metadata of the uploaded document.
-    currentTimeUTC = datetime.now(timezone.utc)  # Obtain the current time in UTC.  
+    userName = metadata.get('userName', None)  # Obtain the user name from the metadata.
+    currentTimeUTC = datetime.now(timezone.utc)  # Obtain the current time in UTC. \ 
     accountKey = os.environ["documentvaultbtcloud_STORAGE"]  # Obtain the account key from the environment variable.\
-    expiryTime = currentTimeUTC + timedelta(days=1)
-
-
-    getNotes = metadata.get('Notes', None)
-    sendToEmail = metadata.get('SendToEmail', None)
+    expiryTime = currentTimeUTC + timedelta(minutes=30) # Create the expiry time for the SAS token.
+    getNotes = metadata.get('Notes', None) # Obtain the notes from the metadata.
+    sendToEmail = metadata.get('SendToEmail', None) # Obtain the email address from the metadata.
     if sendToEmail:
         logging.info(f"We're sending this to {sendToEmail}")
 
@@ -50,9 +49,11 @@ def gatherFileInfo(myblob: func.InputStream, context: func.Context):
     message = Mail( 
         from_email="BTCloudWebApp@Gmail.com",
         to_emails=sendToEmail,
-        subject="Your document is ready!",
-        html_content=f"Your document is ready for download. Click <a href='{linkToSend}'>here</a> to download it. <br>"
-                     f"Notes: {getNotes}"
+        subject=f"{userName} has sent you a file!",
+        html_content=f"{userName} has sent you a file to download! <a href='{linkToSend}'>Click here<a/> to download it. <br>"
+                     f"Please note that this link will expire in 30 minutes. <br> <br>"
+                     f"Notes:<br>{getNotes}<br><br><br>"
+                     f"This was sent using the <a href=https://btcloudwebapp.com/>BTCloud Web App<a>. <br> <br>",
     ) 
 
     try:
@@ -63,7 +64,6 @@ def gatherFileInfo(myblob: func.InputStream, context: func.Context):
         logging.info(response.headers)
     except Exception as e:
         logging.error(e)
-
 
 
 
